@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import { Request, Response } from "express";
 
 import { db } from "../db";
 const table = db.collection("data");
@@ -23,20 +23,39 @@ const add = async (req: Request, res: Response) => {
 
 const find = async (req: Request, res: Response) => {
   console.log("body:", req.body);
-  req.body = req.body ? req.body : {};
+  req.body = req.body ? req.body : " ";
   try {
     let resp;
+    var count;
 
     //if Pagination params provided
     if ((req.body.skip || req.body.skip === 0) && req.body.take) {
       resp = await table
-        .find()
+        .find(req.body.where)
         .limit(req.body.take)
         .skip(req.body.skip)
         .toArray();
+      count = await table.countDocuments();
+
+      console.log("Count:", count);
+      console.log("if block");
+    } else if ((req.body.page || req.body.page == 0) && req.body.size) {
+      resp = await table
+        .find({
+          $or: [
+            { role: { $regex: ".*" + req.body.role + ".*" } },
+
+            { f_name: { $regex: ".*" + req.body.f_name + ".*" } },
+            { l_name: { $regex: ".*" + req.body.l_name + ".*" } },
+          ],
+        })
+        .limit(req.body.size)
+        .skip(req.body.page)
+        .toArray();
+      count = await table.countDocuments();
       console.log("if block");
     }
-    //if Pagination params not provided
+    //if Pagination params  provided with find many
     else {
       resp = await table.find(req.body).toArray();
     }
@@ -45,6 +64,7 @@ const find = async (req: Request, res: Response) => {
     res.status(200).json({
       response: resp,
       message: "fetched successfully",
+      count: count,
     });
   } catch (error) {
     res.status(400).json({
@@ -93,4 +113,44 @@ const remove = async (req: Request, res: Response) => {
   } catch (error) {}
 };
 
-export { add, find, update, remove };
+//find many with pagination
+
+const findMany = async (req: Request, res: Response) => {
+  try {
+    var resp;
+    var count;
+    if ((req.body.skip || req.body.skip == 0) && req.body.take) {
+      resp = await table
+        .find({
+          $or: [
+            { role: { $regex: ".*" + req.body.role + ".*" } },
+
+            { f_name: { $regex: ".*" + req.body.f_name + ".*" } },
+            { l_name: { $regex: ".*" + req.body.l_name + ".*" } },
+          ],
+        })
+        .limit(req.body.take)
+        .skip(req.body.skip)
+        .toArray();
+      count = await table.countDocuments();
+      console.log("if block");
+    } else {
+      resp = await table
+        .find({
+          $or: [
+            { role: { $regex: ".*" + req.body.role + ".*" } },
+
+            { f_name: { $regex: ".*" + req.body.f_name + ".*" } },
+            { l_name: { $regex: ".*" + req.body.l_name + ".*" } },
+          ],
+        })
+        .toArray();
+      count = await table.countDocuments();
+    }
+    res.json({
+      response: resp,
+      count: count,
+    });
+  } catch (error) {}
+};
+export { add, find, update, remove, findMany };
