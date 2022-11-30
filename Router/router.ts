@@ -1,9 +1,9 @@
-import express, { Request, Response } from "express";
+import express from "express";
 const router = express.Router();
-import { add, find, remove, update } from "../Controller/crud";
-router.post("/test", add);
-router.get("/fetch", find);
-router.put("/set", update);
-router.delete("/remove", remove);
+import * as crud from "../Controller/crud";
+router.post("/test", crud.add);
+router.get("/fetch", crud.find);
+router.put("/set", crud.update);
+router.delete("/remove", crud.remove);
 
 export { router };
